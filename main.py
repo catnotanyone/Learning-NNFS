@@ -68,7 +68,6 @@ print(f"Loss: {loss}")
 # Poor implimention of calculating accuracy
 def calculate_accuracy(y, y_true):
     predictions = np.argmax(y, axis=1)
-    print(predictions)
     accuracy = np.mean(predictions == y_true)
     return accuracy
 
