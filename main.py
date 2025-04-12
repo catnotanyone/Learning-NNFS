@@ -26,6 +26,26 @@ class ActivationSoftmax:
         self.output = probabilities
         return self.output
     
+class Loss:
+    def calculate(self, output, y):
+        sample_losses = self.forward(output, y)
+        data_loss = np.mean(sample_losses)
+        return data_loss
+
+class LossCategoricalCrossentropy(Loss):
+    def forward(self, y_pred, y_true):
+        # Clip predictions to prevent log(0)
+        y_pred_clipped = np.clip(y_pred, 1e-7, 1 - 1e-7)
+        
+        if len(y_true.shape) == 1:
+            correct_confidences = y_pred_clipped[range(len(y_pred_clipped)), y_true]
+        elif len(y_true.shape) == 2:
+            correct_confidences = np.sum(y_pred_clipped*y_true, axis=1)
+
+        nagative_log_likelihoods = -np.log(correct_confidences)
+        return nagative_log_likelihoods
+            
+
 X, y = spiral_data(samples=100, classes=3)
 
 dense1 = LayerDense(2, 3)
@@ -39,3 +59,18 @@ dense2.forward(activation1.output)
 activation2.forward(dense2.output)
 # Print the output of the final layer
 print(activation2.output[:5])  # Print the first 5 predictions
+
+loss_calculation = LossCategoricalCrossentropy()
+loss = loss_calculation.calculate(activation2.output, y)
+
+print(f"Loss: {loss}")
+
+# Poor implimention of calculating accuracy
+def calculate_accuracy(y, y_true):
+    predictions = np.argmax(y, axis=1)
+    print(predictions)
+    accuracy = np.mean(predictions == y_true)
+    return accuracy
+
+accuracy = calculate_accuracy(activation2.output, y)
+print(f"Accuracy: {accuracy}")
