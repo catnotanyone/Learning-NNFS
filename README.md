@@ -7,7 +7,7 @@ So far, I’ve learned — and I’ve still got more to learn.
 - [X] Objects
 - [X] Hidden Layer Activation Functions
 - [X] Softmax Function
-- [ ] Calculating Loss
+- [X] Calculating Loss
 - [ ] Implementing Loss
 - [ ] Optimizaiton
 - [ ] Derivative
