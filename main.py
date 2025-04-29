@@ -3,6 +3,7 @@ import nnfs
 from nnfs.datasets import spiral_data
 nnfs.init()
 
+
 class LayerDense:
     def __init__(self, n_inputs, n_neurons):
         # Initialize weights and biases
@@ -13,10 +14,12 @@ class LayerDense:
         # Compute the output of the layer
         self.output = np.dot(inputs, self.weights) + self.biases
 
+
 class ActivationReLU:
     def forward(self, inputs):
         # Apply ReLU activation function
         self.output = np.maximum(0, inputs)
+
 
 class ActivationSoftmax:
     def forward(self, inputs):
@@ -25,7 +28,8 @@ class ActivationSoftmax:
         probabilities = exp_values / np.sum(exp_values, axis=1, keepdims=True)
         self.output = probabilities
         return self.output
-    
+
+
 class Loss:
     def calculate(self, output, y):
         sample_losses = self.forward(output, y)
@@ -73,3 +77,4 @@ def calculate_accuracy(y, y_true):
 
 accuracy = calculate_accuracy(activation2.output, y)
 print(f"Accuracy: {accuracy}")
+
