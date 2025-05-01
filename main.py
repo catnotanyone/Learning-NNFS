@@ -1,7 +1,8 @@
 import numpy as np
-import nnfs
-from nnfs.datasets import spiral_data
-nnfs.init()
+
+# --Mnist-data--
+from mnist.data_loader import train_images, train_labels, test_images, test_labels
+
 
 
 class LayerDense:
@@ -157,23 +158,37 @@ class OptimizerAdam:
 
 
 
-# -- Data --
-X, y = spiral_data(samples=100, classes=3)
+def calculate_accuracy(y_pred, y_true):
+    predictions = np.argmax(y_pred, axis=1)
+    accuracy = np.mean(predictions == y_true)
+    return accuracy
+
+
+# Mnist number dataset
+# Normalizing the images to range [0, 1] for better training performace
+train_images = train_images / 255.0
+test_images = test_images / 255.0
+
+# Flatting the images into a 2D shape
+X = train_images.reshape(train_images.shape[0], -1)
+y = train_labels
 
 # -- Model setup --
-dense1       = LayerDense(2,  64)
+dense1       = LayerDense(784,  512)
 activation1  = ActivationReLU()
-dense2       = LayerDense(64, 3)
-activation2  = ActivationSoftmax()
+dense2       = LayerDense(512, 512)
+activation2  = ActivationReLU()
+dense3       = LayerDense(512, 10)
+activation3  = ActivationSoftmax()
 loss_function = LossCategoricalCrossentropy()
 
-# optimizer = OptimizerMomentum(learning_rate=1.0, momentum=0.9)
-optimizer = OptimizerAdam(lr=0.02)
+optimizer = OptimizerMomentum(learning_rate=0.1, momentum=0.9)
+# optimizer = OptimizerAdam(lr=0.02)
 
 
 # -- Training hyperparams --
 # learning_rate = 1.0
-epochs = 10000
+epochs = 10001
 
 for epoch in range(epochs):
     # --- Forward pass ---
@@ -181,38 +196,58 @@ for epoch in range(epochs):
     activation1.forward(dense1.output)
     dense2.forward(activation1.output)
     activation2.forward(dense2.output)
+    dense3.forward(activation2.output)
+    activation3.forward(dense3.output)
 
     # --- Loss & accuracy ---
-    loss = loss_function.calculate(activation2.output, y)
-    predictions = np.argmax(activation2.output, axis=1)
-    accuracy    = np.mean(predictions == y)
+    loss = loss_function.calculate(activation3.output, y)
+    # predictions = np.argmax(activation3.output, axis=1)
+    # accuracy    = np.mean(predictions == y)
+
+    accuracy = calculate_accuracy(activation3.output, y)
 
     if epoch % 100 == 0:
         print(f"Epoch {epoch:4d} — loss: {loss:.3f} — acc: {accuracy:.3f}")
 
     # --- Backward pass ---
     # 1) dvalues to softmax inputs via combined formula
-    dvalues = activation2.output.copy()
+    dvalues = activation3.output.copy()
     dvalues[range(len(X)), y] -= 1
     dvalues /= len(X)
 
     # 2) Backprop through layers
-    dense2.backward(dvalues)
+    dense3.backward(dvalues)
+    activation2.backward(dense3.dinputs)
+    dense2.backward(activation2.dinputs)
     activation1.backward(dense2.dinputs)
     dense1.backward(activation1.dinputs)
 
     # --- Update weights & biases (Gradient Descent) ---
     optimizer.update_params(dense1, 'dense1')
     optimizer.update_params(dense2, 'dense2')
+    optimizer.update_params(dense3, 'dense3')
 
 
 
-# def calculate_accuracy(y_pred, y_true):
-#     predictions = np.argmax(y_pred, axis=1)
-#     accuracy = np.mean(predictions == y_true)
-#     return accuracy
 
-# accuracy = calculate_accuracy(activation2.output, y)
-# print(f"Accuracy: {accuracy}")
+print("\n---Test---\n")
+# Evaluate on test data
+X_test = test_images.reshape(test_images.shape[0], -1)  # Flatten test images
+y_test = test_labels
 
-# print(f"Output shape: {activation2.output.shape}")
+def test_model(X, y):
+    dense1.forward(X)
+    activation1.forward(dense1.output)
+    dense2.forward(activation1.output)
+    activation2.forward(dense2.output)
+    dense3.forward(activation2.output)
+    activation3.forward(dense3.output)
+
+    # test_predictions = np.argmax(activation3.output, axis=1)
+    # test_accuracy = np.mean(test_predictions == y)
+
+    test_accuracy = calculate_accuracy(activation3.output, y)
+    print(f"Test accuracy: {test_accuracy:.3f}")
+
+test_model(X_test, y_test)
+
